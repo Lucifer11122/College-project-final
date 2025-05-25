@@ -13,8 +13,12 @@ const CollegeAdmissionForm = () => {
     zip: "",
     board: "",
     selectedSubjects: [],
-    subjectMarks: {}
+    subjectMarks: {},
+    marksheetFile: null
   });
+  
+  const [marksheetFileName, setMarksheetFileName] = useState("");
+  const [uploadingMarksheet, setUploadingMarksheet] = useState(false);
   
   const [calculatedPercentage, setCalculatedPercentage] = useState(0);
 
@@ -162,20 +166,57 @@ const CollegeAdmissionForm = () => {
     return newErrors;
   };
 
+  const handleMarksheetUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({
+        ...prev,
+        marksheetFile: 'File size must be less than 5MB'
+      }));
+      return;
+    }
+    
+    // Check file type
+    if (file.type !== 'application/pdf') {
+      setErrors(prev => ({
+        ...prev,
+        marksheetFile: 'Only PDF files are allowed'
+      }));
+      return;
+    }
+    
+    // Clear any previous errors
+    if (errors.marksheetFile) {
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors.marksheetFile;
+        return newErrors;
+      });
+    }
+    
+    // Set the file in formData
+    setFormData(prev => ({
+      ...prev,
+      marksheetFile: file
+    }));
+    
+    // Set the file name for display
+    setMarksheetFileName(file.name);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Reset previous results and errors
-    setSubmissionResult(null);
-    setErrors({});
-    
-    // Validate form
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
+
+    // Validate form data
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       setSubmissionResult({
         success: false,
-        message: "Please fix the errors in the form."
+        message: 'Please correct the errors in the form.'
       });
       return;
     }
@@ -199,20 +240,61 @@ const CollegeAdmissionForm = () => {
       await axios.get('http://localhost:5000/api/applications');
       
       /**
-       * Submit application to backend API
-       * The server will calculate the merit score based on class12Percentage
-       * and send a confirmation email upon successful submission
+       * Create FormData for file upload if marksheet is provided
        */
-      const response = await axios.post(
-        'http://localhost:5000/api/applications',
-        submissionData,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000 // 10s timeout for slow connections
+      let applicationResponse;
+      
+      if (formData.marksheetFile) {
+        setUploadingMarksheet(true);
+        
+        // Create FormData for multipart/form-data request
+        const formDataObj = new FormData();
+        
+        // Add the PDF file
+        formDataObj.append('marksheetFile', formData.marksheetFile);
+        
+        // Add other form data as JSON string
+        formDataObj.append('applicationData', JSON.stringify(submissionData));
+        
+        try {
+          // Submit with file upload
+          applicationResponse = await axios.post(
+            'http://localhost:5000/api/applications/with-marksheet',
+            formDataObj,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              },
+              timeout: 30000 // 30s timeout for file uploads
+            }
+          );
+        } catch (error) {
+          console.error('Error uploading marksheet:', error);
+          setSubmissionResult({
+            success: false,
+            message: 'Error uploading marksheet. Please try again.'
+          });
+          setUploadingMarksheet(false);
+          return;
+        } finally {
+          setUploadingMarksheet(false);
         }
-      );
+      } else {
+        // Regular submission without file
+        applicationResponse = await axios.post(
+          'http://localhost:5000/api/applications',
+          submissionData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000 // 10s timeout for slow connections
+          }
+        );
+      }
+      
+      // Use the response from either submission method
+      const response = applicationResponse;
       
       console.log('Received response from server:', response);
       
@@ -237,8 +319,12 @@ const CollegeAdmissionForm = () => {
           zip: "",
           board: "",
           selectedSubjects: [],
-          subjectMarks: {}
+          subjectMarks: {},
+          marksheetFile: null
         });
+        
+        // Reset marksheet file name
+        setMarksheetFileName("");
         
         // Reset calculated percentage
         setCalculatedPercentage(0);
@@ -407,6 +493,36 @@ const CollegeAdmissionForm = () => {
             ))}
           </select>
           {errors.board && <p className="mt-1 text-sm text-red-500">{errors.board}</p>}
+        </div>
+
+        {/* 12th Marksheet Upload */}
+        <div className="mb-4">
+          <label htmlFor="marksheet-upload" className="block text-sm font-medium text-gray-700">
+            Upload 12th Marksheet (PDF only, max 5MB)
+          </label>
+          <div className="flex items-center mt-1">
+            <label 
+              htmlFor="marksheet-upload" 
+              className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded border border-blue-300 transition-colors flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Choose File
+            </label>
+            <input 
+              type="file" 
+              id="marksheet-upload" 
+              className="hidden" 
+              accept="application/pdf"
+              onChange={handleMarksheetUpload}
+            />
+            <span className="ml-3 text-gray-600">
+              {marksheetFileName ? marksheetFileName : 'No file chosen'}
+            </span>
+          </div>
+          {errors.marksheetFile && <p className="mt-1 text-sm text-red-500">{errors.marksheetFile}</p>}
+          {uploadingMarksheet && <p className="mt-1 text-sm text-blue-500">Uploading marksheet...</p>}
         </div>
 
         <div className="mb-4">
