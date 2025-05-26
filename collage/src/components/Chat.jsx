@@ -104,18 +104,90 @@ function Chat() {
       const isAskingForCourses = isAskingForCourseRecommendation(inputMessage);
       let courseRecommendations = null;
       
-      if (isAskingForCourses) {
+      // Check if the user is asking specifically about undergraduate or graduate courses
+      const lowercaseInput = inputMessage.toLowerCase();
+      
+      // General course query detection (should match when asking about available courses)
+      const isGeneralCourseQuery = [
+        'courses available', 'available courses', 'what courses', 'which courses',
+        'courses offered', 'offered courses', 'list of courses', 'all courses',
+        'courses in this college', 'college courses', 'courses in your college',
+        'what are the courses', 'tell me about courses', 'show me courses'
+      ].some(keyword => lowercaseInput.includes(keyword));
+      
+      const isAskingForUndergraduate = [
+        'undergraduate', 'bachelor', 'bachelors', 'ug', 'under graduate', 
+        'undergraduate courses', 'bachelor degree', 'bachelor programs'
+      ].some(keyword => lowercaseInput.includes(keyword));
+      
+      const isAskingForGraduate = [
+        'graduate', 'postgraduate', 'masters', 'pg', 'post graduate', 
+        'graduate courses', 'master degree', 'master programs', 'postgraduate courses'
+      ].some(keyword => lowercaseInput.includes(keyword));
+      
+      if (isAskingForUndergraduate || (isGeneralCourseQuery && !isAskingForGraduate)) {
+        // Find the undergraduate courses navigation route
+        const undergraduateNavigation = navigationRoutes.find(route => route.id === 'undergraduate-courses');
+        // Also get graduate courses as a secondary option
+        const graduateNavigation = navigationRoutes.find(route => route.id === 'graduate-courses');
+        
+        const suggestions = [];
+        if (undergraduateNavigation) suggestions.push(undergraduateNavigation);
+        if (graduateNavigation) suggestions.push(graduateNavigation);
+        
+        setNavigationSuggestions(suggestions);
+        
+        // Display a message about undergraduate courses
+        setMessages(prevMessages => [...prevMessages, {
+          id: Date.now() + 0.3,
+          text: `Looking up course information...`,
+          sender: 'system',
+          isCourseAnalysis: true
+        }]);
+      } else if (isAskingForGraduate || isGeneralCourseQuery) {
+        // Find the graduate courses navigation route
+        const graduateNavigation = navigationRoutes.find(route => route.id === 'graduate-courses');
+        // Also get undergraduate courses as a secondary option
+        const undergraduateNavigation = navigationRoutes.find(route => route.id === 'undergraduate-courses');
+        
+        const suggestions = [];
+        if (graduateNavigation) suggestions.push(graduateNavigation);
+        if (undergraduateNavigation) suggestions.push(undergraduateNavigation);
+        
+        setNavigationSuggestions(suggestions);
+        
+        // Display a message about graduate courses
+        setMessages(prevMessages => [...prevMessages, {
+          id: Date.now() + 0.3,
+          text: `Looking up course information...`,
+          sender: 'system',
+          isCourseAnalysis: true
+        }]);
+      } else if (isAskingForCourses) {
         // Generate course recommendations based on the user's message
         courseRecommendations = generateCourseRecommendations(inputMessage);
         
         // Store the course recommendations in state
         setCourseRecommendations(courseRecommendations);
         
-        // Add navigation suggestion to the course recommender page
+        // Add navigation suggestions for course pages
+        const suggestions = [];
+        
+        // Add course recommender navigation
         const courseRecommenderNavigation = navigationRoutes.find(route => route.id === 'course-recommender');
         if (courseRecommenderNavigation) {
-          setNavigationSuggestions([courseRecommenderNavigation]);
+          suggestions.push(courseRecommenderNavigation);
         }
+        
+        // Add undergraduate and graduate course navigation options
+        const undergraduateNavigation = navigationRoutes.find(route => route.id === 'undergraduate-courses');
+        const graduateNavigation = navigationRoutes.find(route => route.id === 'graduate-courses');
+        
+        if (undergraduateNavigation) suggestions.push(undergraduateNavigation);
+        if (graduateNavigation) suggestions.push(graduateNavigation);
+        
+        // Set navigation suggestions (limit to 3)
+        setNavigationSuggestions(suggestions.slice(0, 3));
         
         // Display a message that we're analyzing their interests
         setMessages(prevMessages => [...prevMessages, {

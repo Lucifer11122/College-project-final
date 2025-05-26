@@ -22,11 +22,17 @@ function CourseRecommender() {
   const interestAreas = Object.keys(interestAreaRecommendations);
   const skillSets = Object.keys(skillSetRecommendations);
 
-  // Generate recommendations based on user selections
+  // Generate recommendations based on user selections with enhanced algorithm
   const generateRecommendations = () => {
     if (careerGoals.length === 0 && interests.length === 0 && skills.length === 0) {
       // If no selections, show popular courses
-      setRecommendedCourses(getPopularCourses(6));
+      const popularCourses = getPopularCourses(6).map(course => ({
+        ...course,
+        matchScore: 100,
+        matchReason: 'Popular course at our college',
+        strengthAreas: ['High enrollment', 'Student satisfaction']
+      }));
+      setRecommendedCourses(popularCourses);
       setShowResults(true);
       return;
     }
@@ -37,51 +43,143 @@ function CourseRecommender() {
     setTimeout(() => {
       // Create a map to score each course
       const courseScores = {};
+      const courseMatchReasons = {};
+      const courseStrengthAreas = {};
       
-      // Initialize scores for all courses
+      // Initialize scores and data for all courses
       courses.forEach(course => {
         courseScores[course.id] = 0;
+        courseMatchReasons[course.id] = [];
+        courseStrengthAreas[course.id] = [];
       });
       
-      // Add scores based on career goals
+      // Add scores based on career goals (highest weight)
+      const careerWeight = 2.5;
       careerGoals.forEach(career => {
         const recommendedCourseIds = careerPathRecommendations[career] || [];
         recommendedCourseIds.forEach((courseId, index) => {
-          // Higher weight for first recommendations
-          courseScores[courseId] = (courseScores[courseId] || 0) + (5 - Math.min(index, 4));
+          // Higher weight for first recommendations and apply career multiplier
+          const score = (5 - Math.min(index, 4)) * careerWeight;
+          courseScores[courseId] = (courseScores[courseId] || 0) + score;
+          
+          // Add match reason
+          if (!courseMatchReasons[courseId].includes(`Aligns with ${career} career path`)) {
+            courseMatchReasons[courseId].push(`Aligns with ${career} career path`);
+          }
+          
+          // Add to strength areas
+          if (!courseStrengthAreas[courseId].includes('Career Alignment')) {
+            courseStrengthAreas[courseId].push('Career Alignment');
+          }
         });
       });
       
-      // Add scores based on interests
+      // Add scores based on interests (medium weight)
+      const interestWeight = 2.0;
       interests.forEach(interest => {
         const recommendedCourseIds = interestAreaRecommendations[interest] || [];
         recommendedCourseIds.forEach((courseId, index) => {
-          courseScores[courseId] = (courseScores[courseId] || 0) + (5 - Math.min(index, 4));
+          const score = (5 - Math.min(index, 4)) * interestWeight;
+          courseScores[courseId] = (courseScores[courseId] || 0) + score;
+          
+          // Add match reason
+          if (!courseMatchReasons[courseId].includes(`Matches your interest in ${interest}`)) {
+            courseMatchReasons[courseId].push(`Matches your interest in ${interest}`);
+          }
+          
+          // Add to strength areas
+          if (!courseStrengthAreas[courseId].includes('Interest Alignment')) {
+            courseStrengthAreas[courseId].push('Interest Alignment');
+          }
         });
       });
       
-      // Add scores based on skills
+      // Add scores based on skills (medium weight)
+      const skillWeight = 1.8;
       skills.forEach(skill => {
         const recommendedCourseIds = skillSetRecommendations[skill] || [];
         recommendedCourseIds.forEach((courseId, index) => {
-          courseScores[courseId] = (courseScores[courseId] || 0) + (5 - Math.min(index, 4));
+          const score = (5 - Math.min(index, 4)) * skillWeight;
+          courseScores[courseId] = (courseScores[courseId] || 0) + score;
+          
+          // Add match reason
+          if (!courseMatchReasons[courseId].includes(`Utilizes your strength in ${skill}`)) {
+            courseMatchReasons[courseId].push(`Utilizes your strength in ${skill}`);
+          }
+          
+          // Add to strength areas
+          if (!courseStrengthAreas[courseId].includes('Skill Utilization')) {
+            courseStrengthAreas[courseId].push('Skill Utilization');
+          }
         });
       });
       
-      // Sort courses by score and get top 6
+      // Consider current education level if provided
+      if (currentEducation) {
+        courses.forEach(course => {
+          // Check if the course eligibility matches the current education
+          if (course.eligibility && course.eligibility.toLowerCase().includes(currentEducation.toLowerCase())) {
+            courseScores[course.id] = (courseScores[course.id] || 0) + 3;
+            
+            // Add match reason
+            if (!courseMatchReasons[course.id].includes('Matches your educational background')) {
+              courseMatchReasons[course.id].push('Matches your educational background');
+            }
+            
+            // Add to strength areas
+            if (!courseStrengthAreas[course.id].includes('Educational Fit')) {
+              courseStrengthAreas[course.id].push('Educational Fit');
+            }
+          }
+        });
+      }
+      
+      // Calculate maximum possible score for normalization
+      const maxPossibleScore = (
+        careerGoals.length * 5 * careerWeight +
+        interests.length * 5 * interestWeight +
+        skills.length * 5 * skillWeight +
+        (currentEducation ? 3 : 0)
+      );
+      
+      // Sort courses by score
       const sortedCourseIds = Object.keys(courseScores)
         .filter(courseId => courseScores[courseId] > 0)
         .sort((a, b) => courseScores[b] - courseScores[a]);
       
-      // Get full course objects for the top scored courses
+      // Get full course objects for the top scored courses with match percentage
       const topRecommendations = sortedCourseIds
-        .slice(0, 6)
-        .map(courseId => getCourseById(courseId))
-        .filter(Boolean); // Remove any undefined values
+        .slice(0, 8) // Get more recommendations initially
+        .map(courseId => {
+          const course = getCourseById(courseId);
+          if (!course) return null;
+          
+          // Calculate match percentage (normalized score)
+          const matchScore = Math.round((courseScores[courseId] / maxPossibleScore) * 100);
+          
+          // Limit reasons to top 3
+          const matchReasons = courseMatchReasons[courseId].slice(0, 3);
+          
+          return {
+            ...course,
+            matchScore: Math.min(matchScore, 100), // Cap at 100%
+            matchReason: matchReasons.length > 0 ? matchReasons[0] : 'Recommended based on your selections',
+            allMatchReasons: matchReasons,
+            strengthAreas: courseStrengthAreas[courseId]
+          };
+        })
+        .filter(Boolean) // Remove any undefined values
+        .slice(0, 6); // Limit to 6 final recommendations
       
       // If we don't have enough recommendations, add some popular courses
       if (topRecommendations.length < 3) {
-        const popularCourses = getPopularCourses(6);
+        const popularCourses = getPopularCourses(6).map(course => ({
+          ...course,
+          matchScore: 70,
+          matchReason: 'Popular course at our college',
+          strengthAreas: ['High enrollment', 'Student satisfaction']
+        }));
+        
         popularCourses.forEach(course => {
           if (!topRecommendations.find(c => c.id === course.id)) {
             topRecommendations.push(course);
@@ -123,7 +221,6 @@ function CourseRecommender() {
     setCareerGoals([]);
     setInterests([]);
     setSkills([]);
-    setUserName('');
     setCurrentEducation('');
     setShowResults(false);
     setRecommendedCourses([]);
@@ -239,7 +336,7 @@ function CourseRecommender() {
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-orange-800">
-                  {userName ? `Recommendations for ${userName}` : 'Your Recommended Courses'}
+                  Your Recommended Courses
                 </h2>
                 <button
                   onClick={handleReset}
@@ -265,12 +362,41 @@ function CourseRecommender() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {recommendedCourses.map((course) => (
                       <div key={course.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-orange-100 px-4 py-3 border-b border-gray-200">
-                          <h3 className="font-bold text-orange-800">{course.name}</h3>
-                          <p className="text-sm text-gray-600">{course.department} • {course.duration}</p>
+                        {/* Match Score Badge */}
+                        <div className="relative">
+                          <div className="absolute top-3 right-3 bg-orange-600 text-white text-sm font-bold rounded-full h-12 w-12 flex items-center justify-center">
+                            {course.matchScore}%
+                          </div>
+                          <div className="bg-orange-100 px-4 py-3 border-b border-gray-200">
+                            <h3 className="font-bold text-orange-800">{course.name}</h3>
+                            <p className="text-sm text-gray-600">{course.department} • {course.duration}</p>
+                          </div>
                         </div>
+                        
+                        {/* Match Reason */}
+                        <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-semibold">Why this matches you:</span> {course.matchReason}
+                          </p>
+                        </div>
+                        
                         <div className="p-4">
                           <p className="text-gray-700 mb-4">{course.description}</p>
+                          
+                          {/* Strength Areas */}
+                          {course.strengthAreas && course.strengthAreas.length > 0 && (
+                            <div className="mb-3">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-1">Your Strength Match:</h4>
+                              <div className="flex flex-wrap gap-1 mb-3">
+                                {course.strengthAreas.map((strength, index) => (
+                                  <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                                    {strength}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="mb-3">
                             <h4 className="text-sm font-semibold text-gray-700 mb-1">Career Paths:</h4>
                             <div className="flex flex-wrap gap-1">
@@ -281,6 +407,7 @@ function CourseRecommender() {
                               ))}
                             </div>
                           </div>
+                          
                           <div>
                             <h4 className="text-sm font-semibold text-gray-700 mb-1">Key Skills:</h4>
                             <div className="flex flex-wrap gap-1">
@@ -292,10 +419,21 @@ function CourseRecommender() {
                             </div>
                           </div>
                         </div>
+                        
                         <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
                           <p className="text-sm text-gray-600">
                             <strong>Eligibility:</strong> {course.eligibility}
                           </p>
+                          {course.allMatchReasons && course.allMatchReasons.length > 1 && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <p className="text-xs text-gray-500 font-semibold">Additional match reasons:</p>
+                              <ul className="text-xs text-gray-500 list-disc list-inside">
+                                {course.allMatchReasons.slice(1).map((reason, index) => (
+                                  <li key={index}>{reason}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -9,39 +9,53 @@ export const navigationRoutes = [
   },
   {
     id: 'courses',
-    keywords: ['courses', 'classes', 'subjects', 'curriculum', 'syllabus', 'study', 'major', 'program'],
+    keywords: ['academics', 'academic programs', 'departments'],
     title: 'Academic Programs',
-    description: 'Browse our courses and academic programs',
+    description: 'Browse our academic programs',
     path: '/academics'
   },
   {
-    id: 'tuition',
-    keywords: ['tuition', 'fees', 'cost', 'price', 'payment', 'financial', 'pay', 'money', 'expensive'],
-    title: 'Tuition & Fees',
-    description: 'Information about tuition, fees, and payment options',
-    path: '/tuition'
+    id: 'undergraduate-courses',
+    keywords: ['undergraduate', 'bachelor', 'bachelors', 'ug', 'under graduate', 'undergraduate courses', 'bachelor degree', 'bachelor programs', 'bachelor courses', 'courses available', 'available courses', 'what courses', 'which courses'],
+    title: 'Undergraduate Courses',
+    description: 'Browse our undergraduate courses and programs',
+    path: '/undergrade'
   },
   {
-    id: 'scholarships',
-    keywords: ['scholarship', 'financial aid', 'grant', 'funding', 'assistance', 'support'],
-    title: 'Scholarships & Financial Aid',
-    description: 'Explore scholarship opportunities and financial aid options',
-    path: '/scholarships'
+    id: 'graduate-courses',
+    keywords: ['graduate', 'postgraduate', 'masters', 'pg', 'post graduate', 'graduate courses', 'master degree', 'master programs', 'master courses', 'postgraduate courses', 'courses offered', 'offered courses', 'list of courses'],
+    title: 'Postgraduate Courses',
+    description: 'Browse our postgraduate courses and programs',
+    path: '/Graduation'
   },
-  {
-    id: 'housing',
-    keywords: ['housing', 'dorm', 'residence', 'accommodation', 'live', 'stay', 'room'],
-    title: 'Campus Housing',
-    description: 'Information about on-campus housing options',
-    path: '/housing'
-  },
-  {
-    id: 'events',
-    keywords: ['event', 'activity', 'calendar', 'schedule', 'happening', 'workshop', 'seminar'],
-    title: 'Events Calendar',
-    description: 'See upcoming events and activities on campus',
-    path: '/events'
-  },
+  // {
+  //   id: 'tuition',
+  //   keywords: ['tuition', 'fees', 'cost', 'price', 'payment', 'financial', 'pay', 'money', 'expensive'],
+  //   title: 'Tuition & Fees',
+  //   description: 'Information about tuition, fees, and payment options',
+  //   path: '/tuition'
+  // },
+  // {
+  //   id: 'scholarships',
+  //   keywords: ['scholarship', 'financial aid', 'grant', 'funding', 'assistance', 'support'],
+  //   title: 'Scholarships & Financial Aid',
+  //   description: 'Explore scholarship opportunities and financial aid options',
+  //   path: '/scholarships'
+  // },
+  // {
+  //   id: 'housing',
+  //   keywords: ['housing', 'dorm', 'residence', 'accommodation', 'live', 'stay', 'room'],
+  //   title: 'Campus Housing',
+  //   description: 'Information about on-campus housing options',
+  //   path: '/housing'
+  // },
+  // {
+  //   id: 'events',
+  //   keywords: ['event', 'activity', 'calendar', 'schedule', 'happening', 'workshop', 'seminar'],
+  //   title: 'Events Calendar',
+  //   description: 'See upcoming events and activities on campus',
+  //   path: '/events'
+  // },
   {
     id: 'contact',
     keywords: ['contact', 'reach', 'email', 'phone', 'call', 'message', 'support', 'help'],
