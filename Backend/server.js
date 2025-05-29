@@ -38,7 +38,7 @@ connectDB()
  * Note: In production, replace '*' with specific allowed origins
  */
 app.use(cors({
-  origin: '*', // TODO: Restrict to specific origins in production
+  origin: 'http://localhost:5173', // Your frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control', 'Pragma', 'Origin', 'X-Requested-With'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
