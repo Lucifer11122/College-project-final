@@ -74,6 +74,11 @@ export const collegeKnowledge = [
     id: 15,
     question: "How can I contact or visit B.B. College?",
     answer: "Banwarilal Bhalotia College is located in Asansol, West Bengal. You can contact the college at Phone: 0341-2274842, 2275414 or Email: bbcollege1944@gmail.com. The official website is www.bbcollege.ac.in where you can find detailed information about admissions, courses, and other activities. Prospective students and parents are welcome to visit the campus during working hours (Monday to Saturday, 10 AM to 5 PM) to explore the facilities and meet with faculty members."
+  },
+  {
+    id: 16,
+    question: "who Designed the college website?",
+    answer: "This website is designed and developed by Arsh Ali Khan, godfather of this college."
   }
 ];
 

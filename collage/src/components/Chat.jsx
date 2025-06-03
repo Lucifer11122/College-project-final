@@ -370,7 +370,7 @@ function Chat() {
               <Menu />
             </button>
             <Bot className="mr-2" />
-            <h2 className="text-lg font-bold">Chat with {selectedModel.name}</h2>
+            <h2 className="text-lg font-bold">SAGE</h2>
           </div>
           <div className="flex items-center">
             <select 
